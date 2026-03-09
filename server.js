@@ -81,63 +81,12 @@ app.get('/login', (req, res) => {
     res.render('login');
 });
 
-// ==========================================
-// 4. ROUTE D'INSCRIPTION (POST)
-// ==========================================
-app.post('/register', async (req, res) => {
-    try {
-        const { username, email, password } = req.body;
+const authController = require('./controllers/authController');
 
-        // A. Vérifier si l'utilisateur existe déjà
-        const userExists = await Utilisateur.trouverParNom(username);
-        if (userExists) {
-            return res.status(400).send("Ce nom d'utilisateur est déjà pris !");
-        }
+app.post('/register', authController.register);
+app.post('/login', authController.login);
+app.get('/logout', authController.logout);
 
-        // B. Génération de la paire de clés RSA (Asymétrique)
-        const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
-            modulusLength: 2048,
-            publicKeyEncoding: { type: 'spki', format: 'pem' },
-            privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
-        });
-
-        // C. Dérivation du mot de passe en clé AES forte (Symétrique)
-        const salt = crypto.randomBytes(16).toString('hex');
-        const aesKey = crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256');
-
-        // D. Chiffrement de la Clé Privée RSA avec la clé AES
-        const iv = crypto.randomBytes(16);
-        const cipher = crypto.createCipheriv('aes-256-cbc', aesKey, iv);
-        let encryptedPrivateKey = cipher.update(privateKey, 'utf8', 'hex');
-        encryptedPrivateKey += cipher.final('hex');
-
-        // E. Hachage du mot de passe pour la connexion (bcrypt)
-        // Le mot de passe ne doit jamais être stocké en clair [cite: 18]
-        const passwordHash = await bcrypt.hash(password, 10);
-
-        // F. Sauvegarde en Base de Données via notre DAO
-        const nouvelUser = await Utilisateur.creer(
-            username,
-            email,
-            passwordHash,
-            publicKey,
-            encryptedPrivateKey,
-            salt,
-            iv.toString('hex')
-        );
-
-        console.log(`Nouvel utilisateur créé avec succès : ${nouvelUser.nom_utilisateur}`);
-        res.redirect('/login');
-
-    } catch (error) {
-        console.error("Erreur critique lors de l'inscription :", error);
-        res.status(500).send("Erreur interne du serveur lors de l'inscription.");
-    }
-});
-
-// ==========================================
-// 5. LANCEMENT DU SERVEUR
-// ==========================================
 server.listen(PORT, () => {
     console.log(`Serveur Sécurisé (avec WebSockets) démarré sur http://localhost:${PORT}`);
 });

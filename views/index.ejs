@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Mes Fichiers Sécurisés</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>Mon Espace</h2>
+            <a href="/logout" style="color: red; text-decoration: none;">Déconnexion</a>
+        </div>
+        <hr>
+
+        <h3>Ajouter un fichier</h3>
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            <input type="file" name="file" required>
+            <button type="submit">Uploader (Sera chiffré automatiquement)</button>
+        </form>
+
+        <hr>
+
+        <h3>Mes fichiers stockés</h3>
+        <div class="file-list">
+            <div class="file-item">
+                <span>📄 document_secret.pdf</span>
+                <div class="actions">
+                    <a href="/download/1"><button>Télécharger</button></a>
+                    <button style="background-color: #28a745;">Partager</button>
+                </div>
+            </div>
+            <div class="file-item">
+                <span>🖼️ photo_vacances.jpg</span>
+                <div class="actions">
+                    <a href="/download/2"><button>Télécharger</button></a>
+                    <button style="background-color: #28a745;">Partager</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

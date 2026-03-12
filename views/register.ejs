@@ -4,19 +4,42 @@
     <meta charset="UTF-8">
     <title>Inscription Sécurisée (E2EE)</title>
     <link rel="stylesheet" href="/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
-    <div class="container">
-        <h2>Créer un compte sécurisé (Zero-Trust)</h2>
-        <p>Vos clés sont générées localement. Ne perdez jamais votre mot de passe !</p>
-        
-        <form id="register-form">
-            <input type="text" id="username" placeholder="Nom d'utilisateur" required>
-            <input type="email" id="email" placeholder="Votre Email" required>
-            <input type="password" id="password" placeholder="Mot de passe" required>
-            <button type="submit" id="submit-btn">Générer mes clés et m'inscrire</button>
-        </form>
-        <p id="status-message" style="color: blue; margin-top: 15px;"></p>
+<body style="margin: 0; padding: 0; background-color: #000000;">
+    
+    <div class="auth-wrapper">
+        <div class="auth-left">
+            <div class="brand-section">
+                <h1 class="welcome-text">Rejoignez</h1>
+                
+                 <div class="logo-container">
+                    <img src="/images/logo.png" alt="ShareLock">
+                </div>
+            </div>
+        </div>
+
+        <div class="auth-right">
+            <div class="auth-form-container">
+                <h2 class="title_header">Créer un compte</h2>
+                
+                <form id="register-form">
+                    <input type="text" id="username" placeholder="Nom d'utilisateur" required autocomplete="off">
+                    <input type="email" id="email" placeholder="Votre Email" required autocomplete="off">
+                    <input type="password" id="password" placeholder="Mot de passe" required>
+                    
+                    <button type="submit" id="submit-btn">
+                        Générer mes clés et m'inscrire
+                    </button>
+                </form>
+                
+                <div class="auth-footer">
+                    <p>Déjà un compte ? <a href="/login">Se connecter</a></p>
+                </div>
+                
+                <p id="status-message"></p>
+            </div>
+        </div>
     </div>
 
     <script>

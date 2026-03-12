@@ -5,6 +5,7 @@
     <title>Mes Fichiers Sécurisés (E2EE)</title>
     <link rel="stylesheet" href="/style.css" />
     <script src="/js/cryptoDB.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         /* Styles pour le panneau de partage */
@@ -20,79 +21,104 @@
         .file-item { display: flex; justify-content: space-between; padding: 10px; background: #eee; margin-bottom: 5px; border-radius: 5px;}
     </style>
 </head>
-<body>
-    <div class="container">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h2>Mon Espace Sécurisé</h2>
-            <a href="#" onclick="secureLogout()" style="color: red; text-decoration: none">Déconnexion</a>
-        </div>
-        <hr />
+<body style="margin: 0; padding: 40px 20px; background-color: var(--bg-base); display: block;">
 
-        <div class="upload-section">
-            <h3>Uploader un fichier</h3>
-            <form id="upload-form">
-                <input type="file" id="file-input" required>
-                <button type="submit" id="upload-btn">Chiffrer et Envoyer</button>
+    <nav class="navbar">
+        <div class="logo-container" style="margin-bottom: 0;">
+            <img src="/images/logo_white.png" alt="ShareLock">
+        </div>
+        <a href="#" onclick="secureLogout()" style="color: var(--accent-red); font-weight: 600; font-size: 0.95rem;">
+            Déconnexion
+        </a>
+    </nav>
+
+    <div class="dashboard-container">
+        
+        <div class="upload-box">
+            <h3 style="margin-top: 0; color: #fff;">Sécuriser un nouveau fichier</h3>
+            <p style="margin-bottom: 20px;">Le chiffrement s'effectue localement avant l'envoi.</p>
+            
+            <form id="upload-form" style="max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px;">
+                
+                <div class="file-input-wrapper">
+                    <input type="file" id="file-input" required>
+                    
+                    <label for="file-input" class="file-label" id="file-dropzone">
+                        <img src="/images/add_file.svg" alt="" style="width: 40px; margin-bottom: 10px;">
+                        <span id="file-name-display">Cliquez pour sélectionner un fichier</span>
+                    </label>
+                </div>
+
+                <button type="submit" id="upload-btn">
+                    Téléverser en toute sécurité
+                </button>
             </form>
-            <p id="upload-status" style="color: blue; font-weight: bold;"></p>
+            <p id="upload-status"></p>
         </div>
-        <hr />
 
-        <h3>Mes Fichiers</h3>
+        <hr>
+
+        <h3>Mes Fichiers Personnels</h3>
         <div class="file-list">
             <% if (typeof fichiers !== 'undefined' && fichiers.length > 0) { %>
                 <% fichiers.forEach(function(fichier) { %>
                     <div class="file-item">
-                        <span>📄 <%= fichier.nom_fichier %></span>
+                        <span>
+                            <img src="/images/file.svg" alt="" style="width: 20px; vertical-align: middle; margin-right: 8px;">
+                             <%= fichier.nom_fichier %></span>
                         <div>
                             <button onclick="downloadFile('/download/<%= fichier.id %>')">Télécharger</button>
-                            <button 
-                                class="share-btn"
-                                style="background: #28a745; color:white;"
-                                data-id="<%= fichier.id %>"
-                                data-name="<%= fichier.nom_fichier %>"
-                                data-key="<%= fichier.cle_aes_chiffree %>"
-                                onclick="openSharePanel(this)">
-                                Partager
-                            </button>
+                            <button class="share-btn" data-id="<%= fichier.id %>" data-name="<%= fichier.nom_fichier %>" data-key="<%= fichier.cle_aes_chiffree %>" onclick="openSharePanel(this)">Partager</button>
                         </div>
                     </div>
                 <% }); %>
             <% } else { %>
-                <p>Aucun fichier stocké pour le moment.</p>
+                <p style="text-align: center; padding: 20px;">Aucun fichier stocké pour le moment.</p>
             <% } %>
         </div>
 
-        <hr />
-        <h3>Fichiers partagés avec moi</h3>
+        <h3 style="margin-top: 30px;">Fichiers partagés avec moi</h3>
         <div class="file-list">
             <% if (typeof fichiersPartages !== 'undefined' && fichiersPartages.length > 0) { %>
                 <% fichiersPartages.forEach(function(partage) { %>
-                    <div class="file-item" style="background: #e9f5ff; border-left: 4px solid #007bff;">
-                        <span>📥 <%= partage.nom_fichier %> <small>(de <%= partage.proprietaire %>)</small></span>
+                    <div class="file-item shared-with-me">
+                        <span>
+                            <img src="/images/file_shared.svg" alt="" style="width: 25px; vertical-align: middle; margin-right: 8px;">
+                             <%= partage.nom_fichier %> <small>(de <%= partage.proprietaire %>)</small></span>
                         <div>
-                            <button onclick='downloadFile("/download-shared/<%= partage.partage_id %>")'>Télécharger</button>
+                            <button onclick="downloadFile('/download-shared/<%= partage.partage_id %>')">Télécharger</button>
                         </div>
                     </div>
                 <% }); %>
             <% } else { %>
-                <p>Aucun fichier partagé avec vous pour le moment.</p>
+                <p style="text-align: center; padding: 20px;">Aucun fichier partagé avec vous pour le moment.</p>
             <% } %>
         </div>
+    </div>
 
-        <div id="share-panel" class="share-panel">
-            <span class="close-btn" onclick="closeSharePanel()">X Fermer</span>
-            <h2>Partager</h2>
-            <p>Fichier : <strong id="share-filename"></strong></p>
+    <div id="share-panel" class="share-panel">
+        <div class="share-panel-content">
+            
+            <button class="close-btn" type="button" onclick="closeSharePanel()">✕ Fermer</button>
+            
+            <h2 style="color: #fff; margin-bottom: 5px; font-size: 2.2rem;">Partager</h2>
+            <p style="margin-bottom: 25px; color: var(--text-muted);">
+                Fichier : <strong id="share-filename" style="color: var(--accent-blue);"></strong>
+            </p>
             
             <form id="share-form">
                 <input type="hidden" id="share-file-id">
                 <input type="hidden" id="share-encrypted-aes">
-                <input type="text" id="share-recipient" placeholder="Nom d'utilisateur du destinataire" required>
-                <button type="submit" style="background-color: #28a745;">Partager sécurisé</button>
+                
+                <input type="text" id="share-recipient" placeholder="Nom d'utilisateur du contact" required autocomplete="off">
+                
+                <button type="submit" class="share-btn">
+                    Partager en toute sécurité
+                </button>
             </form>
             
-            <p id="share-status" style="margin-top:10px; font-weight:bold;"></p>
+            <p id="share-status"></p>
+            
         </div>
     </div>
 
@@ -126,17 +152,13 @@
         // 2. GESTION DU PANNEAU DE PARTAGE (Visuel uniquement pour l'instant)
         // ==========================================
         function openSharePanel(button) {
-            // On récupère les données stockées dans les attributs "data-"
             const fileId = button.getAttribute('data-id');
             const fileName = button.getAttribute('data-name');
             const encryptedAesKey = button.getAttribute('data-key');
 
-            // On remplit le formulaire comme avant
             document.getElementById('share-file-id').value = fileId;
             document.getElementById('share-filename').innerText = fileName;
             document.getElementById('share-encrypted-aes').value = encryptedAesKey;
-            
-            // On ouvre le panneau
             document.getElementById('share-panel').classList.add('open');
             document.getElementById('share-status').innerText = "";
         }
@@ -144,6 +166,22 @@
         function closeSharePanel() {
             document.getElementById('share-panel').classList.remove('open');
         }
+
+        // --- MISE À JOUR VISUELLE DE L'INPUT FILE ---
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const fileNameDisplay = document.getElementById('file-name-display');
+            const dropzone = document.getElementById('file-dropzone');
+            
+            if (this.files && this.files.length > 0) {
+                // Si un fichier est sélectionné, on affiche son nom et on passe la boîte en vert
+                fileNameDisplay.innerText = "📄 " + this.files[0].name;
+                dropzone.classList.add('has-file');
+            } else {
+                // Si on annule, on remet par défaut
+                fileNameDisplay.innerText = "Cliquez pour sélectionner un fichier";
+                dropzone.classList.remove('has-file');
+            }
+        });
 
         // ==========================================
         // 3. UPLOAD (Ton code existant, inchangé)

@@ -24,6 +24,17 @@ const Partage = {
         `;
         const { rows } = await db.query(query, [destinataireId]);
         return rows;
+    },
+
+    recupererPartagePourTelechargement: async (partageId, destinataireId) => {
+        const query = `
+            SELECT f.chemin_stockage, f.nom_fichier, f.iv_fichier, p.cle_aes_partagee
+            FROM partages_fichiers p
+            JOIN fichiers f ON p.fichier_id = f.id
+            WHERE p.id = $1 AND p.destinataire_id = $2
+        `;
+        const { rows } = await db.query(query, [partageId, destinataireId]);
+        return rows[0];
     }
 };
 

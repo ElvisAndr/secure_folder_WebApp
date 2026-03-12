@@ -2,18 +2,135 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Connexion - Stockage Sécurisé</title>
+    <title>Connexion E2EE - Stockage Sécurisé</title>
     <link rel="stylesheet" href="/style.css">
+    <script src="/js/cryptoDB.js"></script>
 </head>
 <body>
     <div class="container">
-        <h2>Connexion</h2>
-        <form action="/login" method="POST">
-            <input type="text" name="username" placeholder="Nom d'utilisateur" required>
-            <input type="password" name="password" placeholder="Mot de passe" required>
-            <button type="submit">Se connecter</button>
+        <h2>Connexion (Déchiffrement local)</h2>
+        
+        <form id="login-form">
+            <input type="text" id="username" placeholder="Nom d'utilisateur" required>
+            <input type="password" id="password" placeholder="Mot de passe" required>
+            <button type="submit" id="submit-btn">Déverrouiller mes clés et me connecter</button>
         </form>
         <p>Pas encore de compte ? <a href="/register">S'inscrire</a></p>
+        <p id="status-message" style="color: blue; margin-top: 15px; font-weight: bold;"></p>
     </div>
+
+    <script>
+        const encoder = new TextEncoder();
+
+        // Outil : Convertit le Base64 venant du serveur en mémoire binaire (ArrayBuffer)
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault(); // Empêche la page de se recharger bêtement
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const statusText = document.getElementById('status-message');
+            const submitBtn = document.getElementById('submit-btn');
+
+            try {
+                submitBtn.disabled = true;
+                statusText.style.color = "blue";
+                statusText.innerText = "1. Authentification en cours...";
+
+                // ---------------------------------------------------------
+                // ÉTAPE 1 : Hacher le mot de passe pour prouver notre identité
+                // ---------------------------------------------------------
+                const passwordBuffer = encoder.encode(password);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', passwordBuffer);
+                
+                let binary = '';
+                const bytes = new Uint8Array(hashBuffer);
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                const passwordHashClient = window.btoa(binary);
+
+                // ---------------------------------------------------------
+                // ÉTAPE 2 : Demander le "coffre-fort" au serveur
+                // ---------------------------------------------------------
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, passwordHashClient })
+                });
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                const data = await response.json();
+                statusText.innerText = "2. Déchiffrement local de vos clés...";
+
+                // On prépare les données reçues
+                const saltBuffer = base64ToArrayBuffer(data.salt);
+                const ivBuffer = base64ToArrayBuffer(data.iv);
+                const encryptedPrivateKeyBuffer = base64ToArrayBuffer(data.encryptedPrivateKey);
+
+                // ---------------------------------------------------------
+                // ÉTAPE 3 : Refabriquer la clé AES avec le mot de passe en clair
+                // ---------------------------------------------------------
+                const baseKey = await crypto.subtle.importKey(
+                    "raw", passwordBuffer, { name: "PBKDF2" }, false, ["deriveKey"]
+                );
+                const aesKey = await crypto.subtle.deriveKey(
+                    { name: "PBKDF2", salt: saltBuffer, iterations: 100000, hash: "SHA-256" },
+                    baseKey,
+                    { name: "AES-GCM", length: 256 },
+                    false, ["decrypt"]
+                );
+
+                // ---------------------------------------------------------
+                // ÉTAPE 4 : Ouvrir le coffre-fort
+                // ---------------------------------------------------------
+                const decryptedPrivateKeyBuffer = await crypto.subtle.decrypt(
+                    { name: "AES-GCM", iv: ivBuffer },
+                    aesKey,
+                    encryptedPrivateKeyBuffer
+                );
+
+                statusText.innerText = "3. Sécurisation anti-XSS de la clé...";
+
+                // ---------------------------------------------------------
+                // ÉTAPE 5 : LE GRAAL (Niveau 3 - Anti XSS)
+                // ---------------------------------------------------------
+                // On transforme la bouillie d'octets en un objet système inviolable
+                const privateKeyObject = await crypto.subtle.importKey(
+                    "pkcs8",
+                    decryptedPrivateKeyBuffer,
+                    { name: "RSA-OAEP", hash: "SHA-256" },
+                    false, // <-- extractable: false ! La clé ne peut plus être lue par un hacker
+                    ["decrypt"]
+                );
+
+                // On range l'objet dans IndexedDB (via notre fichier cryptoDB.js)
+                await savePrivateKey(privateKeyObject);
+
+                statusText.style.color = "green";
+                statusText.innerText = "Succès ! Forteresse activée. Redirection...";
+                
+                // Redirection vers le tableau de bord
+                setTimeout(() => window.location.href = '/', 1000);
+
+            } catch (error) {
+                console.error("Erreur Zero-Trust :", error);
+                statusText.style.color = "red";
+                statusText.innerText = "Erreur : " + (error.message || "Identifiants incorrects ou corruption des clés.");
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
 </body>
 </html>

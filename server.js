@@ -21,6 +21,8 @@ const PORT = process.env.PORT || 7070;
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+app.use(express.json());
+
 app.use(express.urlencoded({ extended: true })); // Pour lire les formulaires POST
 app.use(express.static(path.join(__dirname, 'public'))); // Pour le CSS
 
@@ -61,25 +63,12 @@ io.on('connection', (socket) => {
     });
 });
 
-// ==========================================
-// 3. ROUTES D'AFFICHAGE (GET)
-// ==========================================
-app.get('/', (req, res) => {
-    // Si l'utilisateur n'est pas connecté, on le jette vers la page de login
-    if (!req.session.userId) {
-        return res.redirect('/login');
-    }
-    // S'il est connecté, on affiche son espace sécurisé
-    res.render('index', { username: req.session.username });
-});
+const authRoutes = require('./routes/auth');
+const fileRoutes = require('./routes/files');
 
-app.get('/register', (req, res) => {
-    res.render('register');
-});
-
-app.get('/login', (req, res) => {
-    res.render('login');
-});
+// On dit à Express d'utiliser ces routes
+app.use('/', authRoutes);
+app.use('/', fileRoutes);
 
 const authController = require('./controllers/authController');
 

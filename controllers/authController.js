@@ -5,30 +5,28 @@ const Utilisateur = require('../models/utilisateur');
 const authController = {
     register: async (req, res) => {
         try {
-            const { username, email, password } = req.body;
+            // Le serveur reçoit maintenant des données DÉJÀ traitées par le navigateur
+            const { username, email, passwordHashClient, publicKey, encryptedPrivateKey, salt, iv } = req.body;
 
             const userExists = await Utilisateur.trouverParNom(username);
             if (userExists) return res.status(400).send("Nom d'utilisateur déjà pris !");
 
-            const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
-                modulusLength: 2048,
-                publicKeyEncoding: { type: 'spki', format: 'pem' },
-                privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
-            });
+            // Le serveur re-hache le hash fourni par le client pour le stocker (Double sécurité)
+            // Comme ça, même si la base fuite, on n'a pas le "vrai" hash qui sert à s'authentifier
+            const finalPasswordHash = await bcrypt.hash(passwordHashClient, 10);
 
-            const salt = crypto.randomBytes(16).toString('hex');
-            const aesKey = crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256');
-
-            const iv = crypto.randomBytes(16);
-            const cipher = crypto.createCipheriv('aes-256-cbc', aesKey, iv);
-            let encryptedPrivateKey = cipher.update(privateKey, 'utf8', 'hex');
-            encryptedPrivateKey += cipher.final('hex');
-
-            const passwordHash = await bcrypt.hash(password, 10);
-
-            await Utilisateur.creer(username, email, passwordHash, publicKey, encryptedPrivateKey, salt, iv.toString('hex'));
+            // On sauvegarde bêtement dans PostgreSQL
+            await Utilisateur.creer(
+                username, 
+                email, 
+                finalPasswordHash, 
+                publicKey, 
+                encryptedPrivateKey, 
+                salt, 
+                iv
+            );
             
-            res.redirect('/login');
+            res.send("Compte E2EE créé avec succès !"); // On renvoie un succès au JS
         } catch (error) {
             console.error(error);
             res.status(500).send("Erreur lors de l'inscription.");
@@ -37,24 +35,33 @@ const authController = {
 
     login: async (req, res) => {
         try {
-            const { username, password } = req.body;
+            const { username, passwordHashClient } = req.body;
 
             const user = await Utilisateur.trouverParNom(username);
             if (!user) {
                 return res.status(401).send("Identifiants incorrects.");
             }
 
-            const isMatch = await bcrypt.compare(password, user.mot_de_passe_hash);
+            // Vérifie bien que ta colonne s'appelle "mot_de_passe_hash" ou "mot_de_passe" dans ta BDD
+            const isMatch = await bcrypt.compare(passwordHashClient, user.mot_de_passe_hash);
             if (!isMatch) {
                 return res.status(401).send("Identifiants incorrects.");
             }
 
+            // Succès ! On crée la session
             req.session.userId = user.id;
             req.session.username = user.nom_utilisateur;
 
-            console.log(`${user.nom_utilisateur} vient de se connecter !`);
-
-            res.redirect('/');
+            // ==========================================
+            // C'EST ICI QU'IL FAUT CHANGER : PLUS DE REDIRECT !
+            // On renvoie un objet JSON pur au navigateur
+            // ==========================================
+            res.json({
+                message: "Connexion réussie",
+                salt: user.sel_crypto,               // Vérifie le nom de ta colonne
+                iv: user.iv_crypto,                  // Vérifie le nom de ta colonne
+                encryptedPrivateKey: user.cle_privee_chiffree // Vérifie le nom de ta colonne
+            });
 
         } catch (error) {
             console.error("Erreur de connexion :", error);

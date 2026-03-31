@@ -23,6 +23,11 @@ const Fichier = {
         const query = `SELECT * FROM fichiers WHERE id = $1;`;
         const { rows } = await db.query(query, [fichierId]);
         return rows[0];
+    },
+
+    supprimer: async (fichierId) => {
+        const query = `DELETE FROM fichiers WHERE id = $1;`;
+        await db.query(query, [fichierId]);
     }
 };
 

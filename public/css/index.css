@@ -1,0 +1,50 @@
+
+.share-panel {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    width: 350px;
+    height: 100vh;
+    background: #f9f9f9;
+    box-shadow: -4px 0 15px rgba(0, 0, 0, 0.1);
+    transition: right 0.3s ease-in-out;
+    padding: 30px;
+    box-sizing: border-box;
+    z-index: 1000;
+}
+
+.share-panel.open {
+    right: 0;
+}
+
+.close-btn {
+    color: red;
+    cursor: pointer;
+    float: right;
+    font-weight: bold;
+}
+
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background: #eee;
+    margin-bottom: 5px;
+    border-radius: 5px;
+}
+
+.btn-delete-file {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: background-color 0.2s;
+    margin-left: 5px; 
+}
+
+.btn-delete-file:hover {
+    background-color: #a71d2a; 
+}

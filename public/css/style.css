@@ -1,0 +1,684 @@
+/* ==========================================
+   VARIABLES DE THÈME (Social Dark / Cyber)
+   ========================================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    /* Palette inspirée des standards X/Twitter et GitHub Dark */
+    --bg-base: #000000;          /* Fond absolu */
+    --bg-surface: #151515;       /* Fond des cartes (très légèrement plus clair) */
+    --bg-hover: #1e1e1e;         /* Fond au survol */
+    --bg-input: #262626;         /* Fond des champs de texte */
+    
+    --border-subtle: #333333;    /* Bordures fines et élégantes */
+    --border-focus: #555555;
+    
+    --text-main: #f3f4f6;        /* Blanc cassé très lisible */
+    --text-muted: #9ca3af;       /* Gris pour les textes secondaires */
+    
+    --accent-blue: #c1272d;      /* Bleu X/Twitter */
+    --accent-blue-hover: #961115;
+    --accent-red: #f4212e;       /* Rouge erreur */
+}
+
+/* ==========================================
+   RESET & TYPOGRAPHIE
+   ========================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    background-color: var(--bg-base);
+    color: var(--text-main);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 50px 20px;
+    /* Un très léger halo bleu au centre pour le côté tech */
+    background-image: radial-gradient(circle at 50% 0%, rgba(29, 155, 240, 0.08), transparent 500px);
+}
+
+/* ==========================================
+   CONTENEUR PRINCIPAL (Design "Card" moderne)
+   ========================================== */
+.container {
+    background-color: var(--bg-surface);
+    width: 100%;
+    max-width: 750px;
+    padding: 40px;
+    border-radius: 16px;
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); /* Ombre douce pour détacher du fond absolu */
+}
+
+form#login-form, form#register-form {
+    max-width: 380px;
+    margin: 0 auto;
+}
+
+h2 { 
+    font-size: 1.7rem; 
+    font-weight: 700; 
+    margin-bottom: 25px; 
+    letter-spacing: -0.5px;
+}
+
+h3 { 
+    font-size: 1.1rem; 
+    font-weight: 600; 
+    color: var(--text-main); 
+    margin: 30px 0 15px 0;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid var(--border-subtle);
+    margin: 30px 0;
+}
+
+p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+/* ==========================================
+   FORMULAIRES & CHAMPS (Inputs)
+   ========================================== */
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+    background-color: var(--bg-base);
+    color: var(--text-main);
+    border: 1px solid var(--border-subtle);
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+input:focus {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 1px var(--accent-blue); /* Contour net type Github/Twitter */
+    background-color: var(--bg-base);
+}
+
+/* ==========================================
+   CUSTOM FILE INPUT (Dropzone moderne)
+   ========================================== */
+.file-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+/* 1. On rend le vrai input totalement invisible mais toujours cliquable en fond */
+.file-input-wrapper input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    border: 0;
+}
+
+/* 2. On stylise le label pour qu'il ressemble à une zone de dépôt */
+.file-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+    background-color: var(--bg-input);
+    border: 2px dashed var(--border-focus);
+    border-radius: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    font-weight: 500;
+}
+
+/* L'effet au survol (Néon bleu) */
+.file-label:hover {
+    background-color: rgba(29, 155, 240, 0.05);
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+    transform: translateY(-2px);
+}
+
+/* L'effet quand un fichier est sélectionné (Néon vert) */
+.file-label.has-file {
+    border-color: var(--accent-blue);
+    background-color: rgba(0, 186, 124, 0.05);
+    color: var(--accent-blue);
+    border-style: solid; /* On passe de pointillés à ligne pleine */
+}
+
+/* ==========================================
+   BOUTONS (Bords arrondis, flat design)
+   ========================================== */
+button {
+    background-color: var(--text-main); /* Bouton principal blanc sur fond noir (très tendance) */
+    color: var(--bg-base);
+    border: none;
+    padding: 14px 20px;
+    border-radius: 8px; /* ou 9999px si tu veux le look "Pillule" de X/Twitter */
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+button:hover {
+    background-color: #d1d5db; /* Blanc très légèrement grisé */
+}
+
+button:active {
+    transform: scale(0.98); /* Petit effet de clic physique */
+}
+
+button:disabled {
+    background-color: var(--border-subtle);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Boutons secondaires & Actions spécifiques */
+button[id="upload-btn"] {
+    background-color: var(--accent-blue);
+    color: white;
+}
+button[id="upload-btn"]:hover { background-color: var(--accent-blue-hover); }
+
+/* Bouton Partager (Vert Cyber) */
+button.share-btn, button[onclick^="openSharePanel"] {
+    background-color: transparent !important;
+    color: var(--accent-blue) !important;
+    border: 1px solid var(--accent-blue);
+
+    transition: all 0.2s ease;
+}
+
+button.share-btn:hover, button[onclick^="openSharePanel"]:hover {
+    background-color: rgb(109, 1, 1) !important;
+    border-color: var(--accent-blue-hover);
+    color: #fff!important;
+}
+
+/* Bouton Télécharger (Gris subtil) */
+.file-item button:not([onclick^="openSharePanel"]) {
+    background-color: transparent;
+    color: var(--text-main);
+    border: 1px solid var(--border-subtle);
+}
+.file-item button:not([onclick^="openSharePanel"]):hover {
+    background-color: var(--bg-hover);
+    border-color: var(--border-focus);
+}
+
+/* Liens */
+a {
+    color: var(--accent-blue);
+    text-decoration: none;
+    font-weight: 500;
+}
+a:hover { text-decoration: underline; }
+a[onclick^="secureLogout"] { color: var(--accent-red); font-weight: 600; }
+a[onclick^="secureLogout"]:hover { text-decoration: underline; }
+
+/* ==========================================
+   LISTE DES FICHIERS (Listes épurées)
+   ========================================== */
+.file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    background-color: transparent !important;
+}
+
+.file-item:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--border-subtle);
+}
+
+.file-item span {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+    color: var(--text-main);
+}
+
+.file-item small {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.file-item div {
+    display: flex;
+    gap: 8px;
+}
+
+/* Style spécifique pour les fichiers partagés avec moi */
+.file-item.shared-with-me {
+    background-color: rgba(29, 155, 240, 0.05); /* Fond très subtilement bleuté */
+    border: 1px solid rgba(29, 155, 240, 0.2);
+}
+
+/* ==========================================
+   TABLEAU DE BORD (Navbar & Layout)
+   ========================================== */
+.navbar {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto 40px auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.dashboard-container {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.upload-box {
+    background-color: rgba(255, 255, 255, 0.02);
+    border: 1px dashed var(--border-focus);
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    transition: all 0.2s ease;
+    margin-bottom: 20px;
+}
+
+.upload-box:hover {
+    border-color: var(--accent-blue);
+    background-color: rgba(29, 155, 240, 0.05);
+}
+
+/* ==========================================
+   PANNEAU DE PARTAGE (Diagonale parfaite & stable)
+   ========================================== */
+.share-panel {
+    position: fixed;
+    top: 0;
+    right: -550px !important; /* Caché par défaut */
+    width: 550px !important;  /* La vraie taille du contenu */
+    height: 100vh;
+    z-index: 1000;
+    transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    background: transparent !important; /* Pas de fond sur la boîte principale */
+}
+
+.share-panel.open {
+    right: 0 !important; /* Quand il s'ouvre, le contenu vient se coller à droite */
+}
+
+/* LE FOND OBLIQUE GIGANTESQUE */
+.share-panel::before {
+    content: '';
+    position: absolute;
+    top: -10%;
+    bottom: -10%;
+    left: 0;
+    right: -1000px; /* Il s'étend infiniment hors de l'écran à droite, on ne verra jamais la fin ! */
+    background-color: var(--bg-surface); /* Le gris très sombre de ton thème */
+    transform: skewX(-8deg); /* La fameuse inclinaison */
+    transform-origin: bottom left;
+    border-left: 2px solid var(--accent-blue); /* Le liseré néon vert */
+    box-shadow: -20px 0 50px rgba(0,0,0,0.9);
+    z-index: -1;
+}
+
+/* LE CONTENU (Bien droit, large et lisible) */
+.share-panel-content {
+    padding: 100px 40px 60px 70px; /* Plus d'espace à gauche pour ne pas toucher la ligne oblique */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+    z-index: 1;
+    left: 2vw;
+}
+
+/* Forçage de la largeur des éléments pour éviter l'écrasement */
+.share-panel-content form {
+    width: 100%;
+}
+
+.share-panel-content input {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.share-panel-content button[type="submit"] {
+    width: 100%;
+    padding: 16px;
+}
+
+/* Le bouton fermer propre */
+.share-panel .close-btn {
+    align-self: flex-end;
+    margin-bottom: 30px;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-subtle);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.share-panel .close-btn:hover {
+    color: var(--accent-red);
+    border-color: var(--accent-red);
+    background: rgba(244, 33, 46, 0.1);
+}
+
+/* ==========================================
+   MESSAGES DE STATUT (Alertes dynamiques)
+   ========================================== */
+/* LA CORRECTION EST ICI : :empty { display: none; } */
+p[id$="-status"], p[id$="-message"] {
+    margin-top: 15px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 12px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+p[id$="-status"]:empty, p[id$="-message"]:empty {
+    display: none;
+}
+
+/* Les couleurs sont gérées en JS via style.color, mais on peut forcer un fond doux */
+p[style*="color: blue"] { color: var(--accent-blue) !important; background: rgba(29, 155, 240, 0.1); }
+p[style*="color: green"] { color: var(--accent-blue) !important; background: rgba(0, 186, 124, 0.1); }
+p[style*="color: red"] { color: var(--accent-red) !important; background: rgba(244, 33, 46, 0.1); }
+
+/* ==========================================
+   LAYOUT AUTHENTIFICATION (Split Screen Diagonale PRO)
+   ========================================== */
+.auth-wrapper {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+    background-color: var(--bg-base); /* Fond noir partout par défaut */
+    overflow: hidden;
+    position: relative;
+}
+
+/* --- LA MAGIE DE LA DIAGONALE EST ICI --- */
+/* On crée un bloc blanc géant qu'on incline, plutôt que de manipuler le fond */
+.auth-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    position: relative;
+    z-index: 2;
+}
+
+.auth-left::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -50%; /* Étend le blanc loin à gauche */
+    right: -10%; /* L'avancée de la diagonale vers la droite */
+    background-color: #ffffff;
+    transform: skewX(-10deg); /* L'inclinaison parfaite */
+    transform-origin: top right;
+    z-index: -1;
+    border-right: 3px solid var(--accent-blue); /* Le liseré néon bleu */
+    box-shadow: 15px 0 50px rgba(0,0,0,0.8); /* L'ombre portée sur la partie noire */
+}
+
+/* --- TYPOGRAPHIE PARTIE BLANCHE --- */
+.brand-section {
+    text-align: center;
+    max-width: 400px;
+}
+
+.welcome-text {
+    font-size: 1.1rem;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 30px;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 25px;
+}
+
+/* Taille du logo pour les pages d'inscription/connexion */
+.logo-container img {
+    width: 100%;
+    max-width: 250px; /* Une taille maximale élégante et qui ne déborde pas */
+    height: auto;
+    object-fit: contain;
+}
+
+/* Taille du logo spécifiquement pour la barre de navigation du tableau de bord */
+.navbar .logo-container img {
+    max-width: 140px; /* Plus petit pour rentrer dans la barre du haut */
+    max-height: 45px; 
+}
+
+/* On s'assure que le conteneur du logo dans la navbar n'a pas de marge en bas */
+.navbar .logo-container {
+    margin-bottom: 0;
+}
+
+.logo-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(0, 186, 124, 0.1);
+    border: 2px solid var(--accent-blue);
+    border-radius: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.8rem;
+    box-shadow: 0 0 25px rgba(0, 186, 124, 0.2);
+}
+
+.logo-text {
+    font-size: 3.5rem;
+    font-weight: 800;
+    letter-spacing: -2px;
+    margin: 0;
+}
+
+.logo-text .text-dark { color: #0f172a; }
+.logo-text .text-blue { color: var(--accent-blue); }
+
+.tagline {
+    color: #64748b;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+/* --- PARTIE DROITE (FORMULAIRE) --- */
+.auth-right {
+    flex: 1.2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    z-index: 1;
+}
+
+.auth-form-container {
+    width: 100%;
+    max-width: 400px;
+}
+
+.auth-form-container h2 {
+    font-size: 2.2rem;
+    margin-bottom: 20px;
+    color: #fff;
+}
+
+.auth-form-container .subtitle {
+    color: var(--text-muted);
+    margin-bottom: 35px;
+    font-size: 1.05rem;
+}
+
+/* Forçage du style des inputs pour contrer le navigateur */
+.auth-form-container input {
+    width: 100%;
+    background-color: #1a1a1a !important; /* Gris très sombre */
+    color: #ffffff !important;
+    border: 1px solid var(--border-subtle);
+    padding: 16px;
+    border-radius: 10px;
+    font-size: 1rem;
+    margin-bottom: 5px;
+}
+
+.auth-form-container input:focus {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 2px rgba(29, 155, 240, 0.2);
+}
+
+.auth-form-container button[type="submit"] {
+    width: 100%;
+    padding: 16px;
+    font-size: 1.1rem;
+    border-radius: 10px;
+    margin-top: 15px;
+    background-color: var(--accent-blue);
+    color: white;
+}
+
+.auth-form-container button[type="submit"]:hover {
+    background-color: var(--accent-blue-hover);
+}
+
+.auth-footer {
+    margin-top: 35px;
+    text-align: center;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 25px;
+}
+
+.auth-footer p {
+    color: var(--text-muted);
+}
+
+/* Responsive pour mobile */
+@media (max-width: 900px) {
+    .auth-wrapper { flex-direction: column; }
+    .auth-left::before {
+        transform: skewY(-5deg);
+        right: 0; bottom: -10%; top: -50%; left: 0;
+        border-right: none;
+        border-bottom: 3px solid var(--accent-blue);
+    }
+}
+
+
+
+/* --- STYLES DE LA MODALE DE SECOURS --- */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.85); /* Fond noir semi-transparent */
+    backdrop-filter: blur(5px); /* Petit effet flou très moderne */
+    display: flex; /* Utilisé en JS pour l'afficher */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: #111111;
+    border: 1px solid #333333;
+    border-radius: 12px;
+    padding: 40px;
+    max-width: 450px;
+    text-align: center;
+    color: #ffffff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    font-family: 'Inter', sans-serif;
+}
+
+.modal-icon { font-size: 40px; margin-bottom: 15px; }
+.modal-title { margin: 0 0 15px 0; font-size: 24px; color: #ff4757; }
+.modal-text { font-size: 15px; color: #cccccc; margin-bottom: 25px; line-height: 1.5; }
+
+.code-box {
+    background-color: #000000;
+    border: 1px dashed #555555;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+}
+
+#recovery-code-display {
+    font-family: monospace;
+    font-size: 22px;
+    color: #2ed573; /* Un beau vert hacker/succès */
+    letter-spacing: 2px;
+    font-weight: bold;
+}
+
+.modal-warning { font-size: 13px; color: #ff7f50; margin-bottom: 30px; }
+
+.modal-btn {
+    background-color: #ffffff;
+    color: #000000;
+    border: none;
+    padding: 15px 30px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s;
+    width: 100%;
+}
+.modal-btn:hover { background-color: #dddddd; }

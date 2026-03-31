@@ -1,0 +1,21 @@
+# SharePoint- Partage de Fichiers Zero-Trust (E2EE)
+Application sécurisée garantissant que le serveur ne voit jamais les fichiers ni les clés en clair.
+
+## Prérequis et Installation
+1. Installez Node.js et PostgreSQL sur votre machine.
+2. Ouvrez un terminal dans le dossier et exécutez : npm install ou npm i
+3. Créez un fichier `.env` à la racine avec vos identifiants :
+   PORT=3000
+   DB_USER=postgres
+   DB_PASSWORD=votre_mot_de_passe
+   DB_HOST=localhost
+   DB_NAME=sharelock_db
+   SESSION_SECRET=phrase_aleatoire_tres_longue_de_votre_choix
+
+## Base de données
+Exécutez ce script SQL pour générer l'architecture de chiffrement :
+
+```sql
+CREATE TABLE utilisateurs (id SERIAL PRIMARY KEY, nom_utilisateur VARCHAR(50) UNIQUE, email VARCHAR(255) UNIQUE, mot_de_passe_hash VARCHAR(255), cle_publique TEXT, cle_privee_chiffree TEXT, sel_crypto VARCHAR(64), iv_crypto VARCHAR(64), encrypted_private_key_backup TEXT, date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE fichiers (id SERIAL PRIMARY KEY, proprietaire_id INTEGER REFERENCES utilisateurs(id) ON DELETE CASCADE, nom_fichier VARCHAR(255), chemin_stockage VARCHAR(500), taille_octets BIGINT, cle_aes_chiffree TEXT, iv_fichier VARCHAR(64), date_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE partages_fichiers (id SERIAL PRIMARY KEY, fichier_id INTEGER REFERENCES fichiers(id) ON DELETE CASCADE, destinataire_id INTEGER REFERENCES utilisateurs(id) ON DELETE CASCADE, cle_aes_partagee TEXT, date_partage TIMESTAMP DEFAULT CURRENT_TIMESTAMP);

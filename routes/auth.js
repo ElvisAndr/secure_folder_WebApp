@@ -1,11 +1,9 @@
 const express = require('express');
-const router = express.Router(); // C'est l'outil magique d'Express pour déporter les routes
-
-// Attention aux chemins : on recule d'un dossier (../) pour aller chercher le contrôleur
+const router = express.Router();
 const authController = require('../controllers/authController');
 
 // ==========================================
-// ROUTES D'AFFICHAGE (Vues EJS)
+// Routes d'affichage (Vues EJS)
 // ==========================================
 router.get('/register', (req, res) => {
     res.render('register');
@@ -16,10 +14,10 @@ router.get('/login', (req, res) => {
 });
 
 // ==========================================
-// ROUTES DE TRAITEMENT (POST & GET)
+// Routes de traitement (POST & GET)
 // ==========================================
 router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.get('/logout', authController.logout);
 
-module.exports = router; // On exporte le routeur pour que server.js puisse l'utiliser
+module.exports = router;

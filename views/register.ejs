@@ -1,189 +1,70 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <title>Inscription Sécurisée (E2EE)</title>
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" href="/images/logo.png" type="image/x-icon">
 </head>
+
 <body style="margin: 0; padding: 0; background-color: #000000;">
-    
+
+    <!-- Section principale de l'inscription -->
     <div class="auth-wrapper">
+        <!-- Partie gauche avec le logo -->
         <div class="auth-left">
             <div class="brand-section">
                 <h1 class="welcome-text">Rejoignez</h1>
-                
-                 <div class="logo-container">
+                <div class="logo-container">
                     <img src="/images/logo.png" alt="ShareLock">
                 </div>
             </div>
         </div>
 
+        <!-- Partie droite avec le formulaire d'inscription -->
         <div class="auth-right">
             <div class="auth-form-container">
                 <h2 class="title_header">Créer un compte</h2>
-                
+
+                <!-- Formulaire d'inscription -->
                 <form id="register-form">
                     <input type="text" id="username" placeholder="Nom d'utilisateur" required autocomplete="off">
                     <input type="email" id="email" placeholder="Votre Email" required autocomplete="off">
                     <input type="password" id="password" placeholder="Mot de passe" required>
-                    
+
                     <button type="submit" id="submit-btn">
                         Générer mes clés et m'inscrire
                     </button>
                 </form>
-                
+
+                <!-- Lien vers la page de connexion -->
                 <div class="auth-footer">
                     <p>Déjà un compte ? <a href="/login">Se connecter</a></p>
                 </div>
-                
+
                 <p id="status-message"></p>
             </div>
         </div>
     </div>
 
-    <script>
-        // ==========================================
-        // OUTILS : Convertisseurs Texte <-> Mémoire (ArrayBuffer)
-        // ==========================================
-        // La WebCrypto API ne comprend pas le texte, il faut le transformer en octets
-        const encoder = new TextEncoder();
-        
-        // Pour envoyer nos données binaires au serveur, on les convertit en texte Base64
-        function arrayBufferToBase64(buffer) {
-            let binary = '';
-            const bytes = new Uint8Array(buffer);
-            for (let i = 0; i < bytes.byteLength; i++) {
-                binary += String.fromCharCode(bytes[i]);
-            }
-            return window.btoa(binary);
-        }
+    <!-- Modal pour afficher le code de secours -->
+    <div id="recovery-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2 class="modal-title">TRÈS IMPORTANT</h2>
+            <p class="modal-text">Votre compte est créé avec succès ! Voici votre <strong>Code de Secours UNIQUE</strong>. Le serveur ne le connaît pas.</p>
 
-        // ==========================================
-        // LE COEUR DE L'INSCRIPTION ZERO-TRUST
-        // ==========================================
-        document.getElementById('register-form').addEventListener('submit', async (e) => {
-            e.preventDefault(); // On bloque l'envoi classique du formulaire
+            <div class="code-box">
+                <span id="recovery-code-display">XXXX-XXXX-XXXX-XXXX</span>
+            </div>
 
-            const username = document.getElementById('username').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const statusText = document.getElementById('status-message');
-            const submitBtn = document.getElementById('submit-btn');
+            <p class="modal-warning">Copiez-le et gardez-le en lieu sûr ! Si vous perdez votre mot de passe, c'est le <strong>SEUL</strong> moyen de récupérer vos fichiers.</p>
 
-            try {
-                submitBtn.disabled = true;
-                statusText.innerText = "Création de vos clés cryptographiques en cours (ne fermez pas la page)...";
-
-                // ---------------------------------------------------------
-                // ÉTAPE A : Hacher le mot de passe pour l'authentification
-                // (Le serveur ne verra jamais le mot de passe en clair)
-                // ---------------------------------------------------------
-                const passwordBuffer = encoder.encode(password);
-                const hashBuffer = await crypto.subtle.digest('SHA-256', passwordBuffer);
-                const passwordHashClient = arrayBufferToBase64(hashBuffer);
-
-                // ---------------------------------------------------------
-                // ÉTAPE B : Générer la paire de clés RSA (Cadenas + Clé)
-                // ---------------------------------------------------------
-                statusText.innerText = "Génération de la paire de clés RSA...";
-                const keyPair = await crypto.subtle.generateKey(
-                    {
-                        name: "RSA-OAEP",
-                        modulusLength: 2048,
-                        publicExponent: new Uint8Array([1, 0, 1]),
-                        hash: "SHA-256"
-                    },
-                    true, // true = on autorise l'exportation des clés
-                    ["encrypt", "decrypt"]
-                );
-
-                // On exporte la clé publique pour pouvoir l'envoyer au serveur
-                const publicKeyBuffer = await crypto.subtle.exportKey("spki", keyPair.publicKey);
-                const publicKeyBase64 = arrayBufferToBase64(publicKeyBuffer);
-
-                // On exporte la clé privée (Attention, elle est encore en clair ici !)
-                const privateKeyBuffer = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
-
-                // ---------------------------------------------------------
-                // ÉTAPE C : Créer la clé AES à partir du mot de passe
-                // ---------------------------------------------------------
-                statusText.innerText = "Sécurisation de votre clé privée...";
-                
-                // 1. On génère un "sel" aléatoire de 16 octets
-                const salt = crypto.getRandomValues(new Uint8Array(16));
-                
-                // 2. On importe le mot de passe dans l'API WebCrypto
-                const baseKey = await crypto.subtle.importKey(
-                    "raw", passwordBuffer, { name: "PBKDF2" }, false, ["deriveKey"]
-                );
-                
-                // 3. On dérive (PBKDF2) pour obtenir une clé AES-GCM 256 bits ultra forte
-                const aesKey = await crypto.subtle.deriveKey(
-                    {
-                        name: "PBKDF2",
-                        salt: salt,
-                        iterations: 100000,
-                        hash: "SHA-256"
-                    },
-                    baseKey,
-                    { name: "AES-GCM", length: 256 },
-                    false, // false = on interdit d'exporter cette clé AES en clair
-                    ["encrypt"]
-                );
-
-                // ---------------------------------------------------------
-                // ÉTAPE D : Chiffrer la clé privée RSA avec la clé AES
-                // ---------------------------------------------------------
-                // Le vecteur d'initialisation (IV) de 12 octets (standard pour AES-GCM)
-                const iv = crypto.getRandomValues(new Uint8Array(12));
-
-                const encryptedPrivateKeyBuffer = await crypto.subtle.encrypt(
-                    { name: "AES-GCM", iv: iv },
-                    aesKey,
-                    privateKeyBuffer // On enferme la clé privée !
-                );
-
-                // ---------------------------------------------------------
-                // ÉTAPE E : Envoyer le coffre-fort au serveur
-                // ---------------------------------------------------------
-                statusText.innerText = "Envoi des données sécurisées au serveur...";
-
-                // On regroupe tout en Base64 pour que le serveur Node.js puisse lire le JSON
-                const payload = {
-                    username: username,
-                    email: email,
-                    passwordHashClient: passwordHashClient,
-                    publicKey: publicKeyBase64,
-                    encryptedPrivateKey: arrayBufferToBase64(encryptedPrivateKeyBuffer),
-                    salt: arrayBufferToBase64(salt),
-                    iv: arrayBufferToBase64(iv)
-                };
-
-                const response = await fetch('/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (response.ok) {
-                    statusText.style.color = "green";
-                    statusText.innerText = "Succès ! Redirection vers la connexion...";
-                    setTimeout(() => window.location.href = '/login', 2000);
-                } else {
-                    const errorMsg = await response.text();
-                    statusText.style.color = "red";
-                    statusText.innerText = "Erreur : " + errorMsg;
-                    submitBtn.disabled = false;
-                }
-
-            } catch (error) {
-                console.error("Erreur cryptographique :", error);
-                statusText.style.color = "red";
-                statusText.innerText = "Une erreur est survenue lors de la génération des clés.";
-                submitBtn.disabled = false;
-            }
-        });
-    </script>
+            <button id="modal-confirm-btn" class="modal-btn">J'ai bien noté mon code</button>
+        </div>
+    </div>
+    <script src="js/register.js"></script>
 </body>
+
 </html>

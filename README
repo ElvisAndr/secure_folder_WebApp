@@ -16,6 +16,48 @@ Application sécurisée garantissant que le serveur ne voit jamais les fichiers 
 Exécutez ce script SQL pour générer l'architecture de chiffrement :
 
 ```sql
-CREATE TABLE utilisateurs (id SERIAL PRIMARY KEY, nom_utilisateur VARCHAR(50) UNIQUE, email VARCHAR(255) UNIQUE, mot_de_passe_hash VARCHAR(255), cle_publique TEXT, cle_privee_chiffree TEXT, sel_crypto VARCHAR(64), iv_crypto VARCHAR(64), encrypted_private_key_backup TEXT, date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE fichiers (id SERIAL PRIMARY KEY, proprietaire_id INTEGER REFERENCES utilisateurs(id) ON DELETE CASCADE, nom_fichier VARCHAR(255), chemin_stockage VARCHAR(500), taille_octets BIGINT, cle_aes_chiffree TEXT, iv_fichier VARCHAR(64), date_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE partages_fichiers (id SERIAL PRIMARY KEY, fichier_id INTEGER REFERENCES fichiers(id) ON DELETE CASCADE, destinataire_id INTEGER REFERENCES utilisateurs(id) ON DELETE CASCADE, cle_aes_partagee TEXT, date_partage TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+DROP TABLE IF EXISTS partages_fichiers CASCADE;
+DROP TABLE IF EXISTS fichiers CASCADE;
+DROP TABLE IF EXISTS utilisateurs CASCADE;
+
+CREATE TABLE utilisateurs (
+    id SERIAL PRIMARY KEY,
+    nom_utilisateur VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    mot_de_passe_hash VARCHAR(255) NOT NULL,
+    cle_publique TEXT NOT NULL,
+    cle_privee_chiffree TEXT NOT NULL,
+    sel_crypto VARCHAR(64) NOT NULL,
+    iv_crypto VARCHAR(64) NOT NULL,
+    encrypted_private_key_backup TEXT NULL,
+    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_email_format CHECK (email ~* '^[A-Za-z0-9._+%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$'),
+    CONSTRAINT chk_nom_longueur CHECK (length(nom_utilisateur) >= 3)
+);
+
+CREATE TABLE fichiers (
+    id SERIAL PRIMARY KEY,
+    proprietaire_id INTEGER NOT NULL REFERENCES utilisateurs(id) ON DELETE CASCADE,
+    nom_fichier TEXT NOT NULL, -- Changé en TEXT pour supporter le nom chiffré + IV
+    chemin_stockage VARCHAR(500) NOT NULL,
+    taille_octets BIGINT NOT NULL,
+    cle_aes_chiffree TEXT NOT NULL,
+    iv_fichier VARCHAR(64) NOT NULL,
+    date_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_taille_positive CHECK (taille_octets >= 0)
+);
+
+CREATE TABLE partages_fichiers (
+    id SERIAL PRIMARY KEY,
+    fichier_id INTEGER NOT NULL REFERENCES fichiers(id) ON DELETE CASCADE,
+    destinataire_id INTEGER NOT NULL REFERENCES utilisateurs(id) ON DELETE CASCADE,
+    cle_aes_partagee TEXT NOT NULL,
+    date_partage TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unq_fichier_destinataire UNIQUE (fichier_id, destinataire_id)
+);
+
+-- Les index pour optimiser la vitesse de recherche de ton serveur
+CREATE INDEX idx_partages_destinataire ON partages_fichiers(destinataire_id);
+CREATE INDEX idx_utilisateurs_nom ON utilisateurs(nom_utilisateur);
+CREATE INDEX idx_utilisateurs_email ON utilisateurs(email);
+CREATE INDEX idx_fichiers_proprietaire ON fichiers(proprietaire_id);

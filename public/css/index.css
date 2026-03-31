@@ -48,3 +48,35 @@
 .btn-delete-file:hover {
     background-color: #a71d2a; 
 }
+
+#delete-link {
+    color: #dc3545;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#delete-link:hover {
+    color: #ffffff;
+    background-color: #74000d;
+    padding: 10px;
+    border-radius: 15px;
+}
+
+#logout-link {
+    color: var(--text-muted, #666);
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#logout-link:hover {
+    background-color: #eda8b0;
+    color: black;
+    padding: 10px;
+    border-radius: 15px;
+}

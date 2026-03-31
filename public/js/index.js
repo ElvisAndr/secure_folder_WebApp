@@ -1,37 +1,84 @@
-// Conversion Base64 <-> ArrayBuffer
+// Convertit une chaîne Base64 en ArrayBuffer pour les opérations de chiffrement.
 function base64ToArrayBuffer(base64) {
     const binaryString = window.atob(base64);
     const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-    }
+    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
     return bytes.buffer;
 }
 
+// Convertit un ArrayBuffer en chaîne Base64 pour l'envoi au serveur.
 function arrayBufferToBase64(buffer) {
     let binary = '';
     const bytes = new Uint8Array(buffer);
-    for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
+    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
     return window.btoa(binary);
 }
 
-// Déconnexion sécurisée
+// Déchiffre la clé AES chiffrée avec la clé RSA privée de l'utilisateur.
+async function getRawAesKeyBuffer(encryptedAesKeyBase64, privateKey) {
+    return await crypto.subtle.decrypt(
+        { name: "RSA-OAEP" }, privateKey, base64ToArrayBuffer(encryptedAesKeyBase64)
+    );
+}
+
+// Déchiffre le nom du fichier chiffré en AES-GCM et retourne le nom clair.
+async function decryptFileName(encryptedNameString, aesKey) {
+    if (!encryptedNameString || !encryptedNameString.includes(':')) return "Fichier inconnu";
+    const [ivBase64, encBase64] = encryptedNameString.split(':');
+    const decryptedBuffer = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: base64ToArrayBuffer(ivBase64) },
+        aesKey,
+        base64ToArrayBuffer(encBase64)
+    );
+    return new TextDecoder().decode(decryptedBuffer);
+}
+
+// Lors du chargement de la page, déchiffre et affiche chaque nom de fichier chiffré.
+document.addEventListener('DOMContentLoaded', async () => {
+    const nameElements = document.querySelectorAll('.encrypted-filename');
+    if (nameElements.length === 0) return;
+
+    const privateKey = await getPrivateKey();
+    if (!privateKey) return;
+
+    for (const el of nameElements) {
+        try {
+            const encryptedNameString = el.getAttribute('data-enc-name');
+            const encryptedAesKeyBase64 = el.getAttribute('data-enc-key');
+
+            const rawAesKeyBuffer = await getRawAesKeyBuffer(encryptedAesKeyBase64, privateKey);
+            const aesKey = await crypto.subtle.importKey("raw", rawAesKeyBuffer, { name: "AES-GCM" }, false, ["decrypt"]);
+            
+            const finalName = await decryptFileName(encryptedNameString, aesKey);
+            el.innerText = finalName;
+
+            const parentDiv = el.closest('.file-item');
+            const shareBtn = parentDiv.querySelector('.share-btn');
+            const deleteBtn = parentDiv.querySelector('button[title="Supprimer définitivement ce fichier"]');
+            
+            if (shareBtn) shareBtn.setAttribute('data-name', finalName);
+            if (deleteBtn && shareBtn) {
+                const fileId = shareBtn.getAttribute('data-id');
+                deleteBtn.setAttribute('onclick', `confirmDeleteFile('${fileId}', '${finalName.replace(/'/g, "\\'")}')`);
+            }
+        } catch (err) {
+            el.innerText = "Erreur de déchiffrement";
+            el.style.color = "red";
+        }
+    }
+});
+
+// Déconnecte proprement l'utilisateur en supprimant la clé privée locale.
 async function secureLogout() {
-    await deletePrivateKey(); // Fonction de cryptoDB.js
+    await deletePrivateKey();
     window.location.href = '/logout';
 }
 
-// Gestion du panneau de partage
+// Ouvre le panneau de partage et préremplit les champs avec les métadonnées du fichier.
 function openSharePanel(button) {
-    const fileId = button.getAttribute('data-id');
-    const fileName = button.getAttribute('data-name');
-    const encryptedAesKey = button.getAttribute('data-key');
-
-    document.getElementById('share-file-id').value = fileId;
-    document.getElementById('share-filename').innerText = fileName;
-    document.getElementById('share-encrypted-aes').value = encryptedAesKey;
+    document.getElementById('share-file-id').value = button.getAttribute('data-id');
+    document.getElementById('share-filename').innerText = button.getAttribute('data-name');
+    document.getElementById('share-encrypted-aes').value = button.getAttribute('data-key');
     document.getElementById('share-panel').classList.add('open');
     document.getElementById('share-status').innerText = "";
 }
@@ -40,13 +87,13 @@ function closeSharePanel() {
     document.getElementById('share-panel').classList.remove('open');
 }
 
-// Mise à jour visuelle de l'input file
-document.getElementById('file-input').addEventListener('change', function (e) {
+// Met à jour l'UI lorsque l'utilisateur sélectionne un fichier dans le champ input.
+document.getElementById('file-input').addEventListener('change', function () {
     const fileNameDisplay = document.getElementById('file-name-display');
     const dropzone = document.getElementById('file-dropzone');
 
     if (this.files && this.files.length > 0) {
-        fileNameDisplay.innerText = "📄 " + this.files[0].name;
+        fileNameDisplay.innerText = "📄 " + this.files.name;
         dropzone.classList.add('has-file');
     } else {
         fileNameDisplay.innerText = "Cliquez pour sélectionner un fichier";
@@ -54,7 +101,7 @@ document.getElementById('file-input').addEventListener('change', function (e) {
     }
 });
 
-// Téléversement sécurisé
+// Chiffre le fichier localement, prépare les métadonnées chiffrées et envoie le tout au serveur.
 document.getElementById('upload-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fileInput = document.getElementById('file-input');
@@ -62,7 +109,7 @@ document.getElementById('upload-form').addEventListener('submit', async (e) => {
     const uploadBtn = document.getElementById('upload-btn');
 
     if (fileInput.files.length === 0) return;
-    const file = fileInput.files[0];
+    const file = fileInput.files;
 
     try {
         uploadBtn.disabled = true;
@@ -78,9 +125,14 @@ document.getElementById('upload-form').addEventListener('submit', async (e) => {
             { name: "AES-GCM", iv: iv }, fileAesKey, fileBuffer
         );
 
-        const publicKeyBuffer = base64ToArrayBuffer(window.MA_CLE_PUBLIQUE);
+        const fileNameBuffer = new TextEncoder().encode(file.name);
+        const fileNameIv = crypto.getRandomValues(new Uint8Array(12));
+        const encryptedFileNameBuffer = await crypto.subtle.encrypt(
+            { name: "AES-GCM", iv: fileNameIv }, fileAesKey, fileNameBuffer
+        );
+
         const rsaPublicKey = await crypto.subtle.importKey(
-            "spki", publicKeyBuffer, { name: "RSA-OAEP", hash: "SHA-256" }, false, ["encrypt"]
+            "spki", base64ToArrayBuffer(window.MA_CLE_PUBLIQUE), { name: "RSA-OAEP", hash: "SHA-256" }, false, ["encrypt"]
         );
 
         const exportedAesKey = await crypto.subtle.exportKey("raw", fileAesKey);
@@ -90,58 +142,56 @@ document.getElementById('upload-form').addEventListener('submit', async (e) => {
 
         statusText.innerText = "2. Envoi au serveur...";
         const formData = new FormData();
-        formData.append('file', new Blob([encryptedFileBuffer]), file.name);
-        formData.append('originalName', file.name);
+        formData.append('file', new Blob([encryptedFileBuffer]), "fichier.enc"); 
+        formData.append('encryptedFileName', arrayBufferToBase64(encryptedFileNameBuffer));
+        formData.append('fileNameIv', arrayBufferToBase64(fileNameIv));
         formData.append('encryptedAesKey', arrayBufferToBase64(encryptedAesKeyBuffer));
         formData.append('iv', arrayBufferToBase64(iv));
 
         const response = await fetch('/upload', { method: 'POST', body: formData });
         if (response.ok) {
-            statusText.style.color = "green"; statusText.innerText = "Succès !";
+            statusText.style.color = "green"; 
+            statusText.innerText = "Succès !";
             setTimeout(() => window.location.reload(), 1500);
         } else throw new Error("Erreur serveur.");
 
     } catch (error) {
-        statusText.style.color = "red"; statusText.innerText = "Erreur : " + error.message;
+        statusText.style.color = "red"; 
+        statusText.innerText = "Erreur : " + error.message;
         uploadBtn.disabled = false;
     }
 });
 
-// Téléchargement et déchiffrement local
+// Télécharge le fichier chiffré, le déchiffre localement puis déclenche l'enregistrement côté client.
 async function downloadFile(downloadUrl) {
     try {
         const privateKey = await getPrivateKey();
         if (!privateKey) throw new Error("Clé privée introuvable. Veuillez vous reconnecter.");
 
         const response = await fetch(downloadUrl);
-
         if (!response.ok) throw new Error("Fichier introuvable sur le serveur.");
 
         const encryptedAesKeyBase64 = response.headers.get('x-encrypted-aes-key');
         const ivBase64 = response.headers.get('x-iv');
-        const originalName = decodeURIComponent(response.headers.get('x-original-name') || "fichier_dechiffre");
-
+        const encryptedNameString = response.headers.get('x-encrypted-name');
         const encryptedFileBuffer = await response.arrayBuffer();
 
-        const encryptedAesKeyBuffer = base64ToArrayBuffer(encryptedAesKeyBase64);
-        const exportedAesKey = await crypto.subtle.decrypt(
-            { name: "RSA-OAEP" }, privateKey, encryptedAesKeyBuffer
-        );
-
-        const ivBuffer = base64ToArrayBuffer(ivBase64);
+        const rawAesKeyBuffer = await getRawAesKeyBuffer(encryptedAesKeyBase64, privateKey);
         const aesKey = await crypto.subtle.importKey(
-            "raw", exportedAesKey, { name: "AES-GCM" }, false, ["decrypt"]
+            "raw", rawAesKeyBuffer, { name: "AES-GCM" }, false, ["decrypt"]
         );
 
         const decryptedFileBuffer = await crypto.subtle.decrypt(
-            { name: "AES-GCM", iv: ivBuffer }, aesKey, encryptedFileBuffer
+            { name: "AES-GCM", iv: base64ToArrayBuffer(ivBase64) }, aesKey, encryptedFileBuffer
         );
+
+        const finalFileName = await decryptFileName(encryptedNameString, aesKey);
 
         const blob = new Blob([decryptedFileBuffer]);
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = originalName;
+        a.download = finalFileName; 
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -153,7 +203,7 @@ async function downloadFile(downloadUrl) {
     }
 }
 
-// Partage sécurisé
+// Partage la clé AES chiffrée du fichier avec un autre utilisateur via sa clé publique.
 document.getElementById('share-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fileId = document.getElementById('share-file-id').value;
@@ -165,37 +215,29 @@ document.getElementById('share-form').addEventListener('submit', async (e) => {
     try {
         submitBtn.disabled = true;
         statusText.style.color = "blue";
+        statusText.innerText = "Recherche de l'utilisateur...";
 
-        statusText.innerText = "1. Recherche de la clé publique de " + recipientUsername + "...";
         const resUser = await fetch(`/api/user/${recipientUsername}/public-key`);
         if (!resUser.ok) throw new Error("Utilisateur introuvable.");
         
         const recipientData = await resUser.json();
-        const recipientPublicKeyBase64 = recipientData.publicKey;
-        const recipientId = recipientData.id;
-
-        statusText.innerText = "2. Déverrouillage local de la clé du fichier...";
+        
+        statusText.innerText = "Sécurisation pour le destinataire...";
         const privateKey = await getPrivateKey();
-        const encryptedAesKeyBuffer = base64ToArrayBuffer(encryptedAesKeyBase64);
+        const rawAesKeyBuffer = await getRawAesKeyBuffer(encryptedAesKeyBase64, privateKey);
 
-        const rawAesKeyBuffer = await crypto.subtle.decrypt(
-            { name: "RSA-OAEP" }, privateKey, encryptedAesKeyBuffer
-        );
-
-        statusText.innerText = "3. Verrouillage pour " + recipientUsername + "...";
-        const recipientPublicKeyBuffer = base64ToArrayBuffer(recipientPublicKeyBase64);
         const rsaPublicKeyBob = await crypto.subtle.importKey(
-            "spki", recipientPublicKeyBuffer, { name: "RSA-OAEP", hash: "SHA-256" }, false, ["encrypt"]
+            "spki", base64ToArrayBuffer(recipientData.publicKey), { name: "RSA-OAEP", hash: "SHA-256" }, false, ["encrypt"]
         );
 
         const newlyEncryptedAesKeyBuffer = await crypto.subtle.encrypt(
             { name: "RSA-OAEP" }, rsaPublicKeyBob, rawAesKeyBuffer
         );
 
-        statusText.innerText = "4. Envoi au serveur...";
+        statusText.innerText = "Envoi...";
         const payload = {
             fileId: fileId,
-            recipientId: recipientId,
+            recipientId: recipientData.id,
             sharedEncryptedAesKey: arrayBufferToBase64(newlyEncryptedAesKeyBuffer)
         };
 
@@ -208,7 +250,7 @@ document.getElementById('share-form').addEventListener('submit', async (e) => {
         if (!resShare.ok) throw new Error("Erreur serveur lors du partage.");
 
         statusText.style.color = "green";
-        statusText.innerText = "Succès ! Le fichier est partagé.";
+        statusText.innerText = "Fichier partagé avec succès.";
         setTimeout(() => closeSharePanel(), 2000);
 
     } catch (error) {
@@ -220,27 +262,40 @@ document.getElementById('share-form').addEventListener('submit', async (e) => {
     }
 });
 
-// Fonction de suppression de fichier liée directement au bouton
+// Demande confirmation et supprime définitivement le fichier sur le serveur.
 async function confirmDeleteFile(fileId, fileName) {
-    const confirmation = confirm(`Êtes-vous sûr de vouloir supprimer DÉFINITIVEMENT le fichier "${fileName}" ?\n\nCette opération est irréversible et le fichier sera effacé du serveur.`);
-    
-    if (!confirmation) return;
+    if (!confirm(`Supprimer définitivement "${fileName}" ?`)) return;
 
     try {
-        const response = await fetch(`/api/files/${fileId}`, {
-            method: 'DELETE',
-        });
-
+        const response = await fetch(`/api/files/${fileId}`, { method: 'DELETE' });
         if (response.ok) {
-            alert("Fichier supprimé avec succès.");
             window.location.reload(); 
         } else {
-            const errorText = await response.text();
-            throw new Error(errorText || "Erreur lors de la suppression sur le serveur.");
+            throw new Error(await response.text());
         }
-
     } catch (error) {
-        console.error("Erreur de suppression :", error);
-        alert(`Impossible de supprimer le fichier : ${error.message}`);
+        console.error(error);
+        alert(`Erreur : ${error.message}`);
+    }
+}
+
+// Demande confirmation et supprime le compte utilisateur ainsi que toutes ses données.
+async function confirmDeleteAccount() {
+    if (!confirm("ATTENTION : Cette action supprimera tous vos fichiers.\nContinuer ?")) return;
+    if (prompt("Tapez SUPPRIMER pour confirmer") !== "SUPPRIMER") return;
+
+    try {
+        if (typeof deletePrivateKey === 'function') await deletePrivateKey(); 
+
+        const response = await fetch('/api/user/delete', { method: 'DELETE' });
+        if (response.ok) {
+            alert("Compte supprimé.");
+            window.location.href = '/register';
+        } else {
+            throw new Error(await response.text());
+        }
+    } catch (error) {
+        console.error(error);
+        alert(`Erreur : ${error.message}`);
     }
 }

@@ -18,9 +18,15 @@
         <div class="logo-container" style="margin-bottom: 0;">
             <img src="/images/logo_white.png" alt="ShareLock">
         </div>
-        <a href="#" onclick="secureLogout()" style="color: var(--accent-red); font-weight: 600; font-size: 0.95rem;">
-            Déconnexion
-        </a>
+        <div style="display: flex; gap: 60px; align-items: center;">
+            <a id="delete-link" href="#" onclick="confirmDeleteAccount()" title="Supprimer définitivement mon compte">
+                Supprimer le compte
+            </a>
+            
+            <a id="logout-link" href="#" onclick="secureLogout()">
+                Déconnexion
+            </a>
+        </div>
     </nav>
 
     <div class="dashboard-container">
@@ -58,9 +64,12 @@
                 <% fichiers.forEach(function(fichier) { %>
                     <div class="file-item">
                         <span>
-                            <img src="/images/file.svg" alt=""
-                                style="width: 20px; vertical-align: middle; margin-right: 8px;">
-                            <%= fichier.nom_fichier %>
+                            <img src="/images/file.svg" alt="" style="width: 20px; vertical-align: middle; margin-right: 8px;">
+                            <span class="encrypted-filename" 
+                                data-enc-name="<%= fichier.nom_fichier %>" 
+                                data-enc-key="<%= fichier.cle_aes_chiffree %>">
+                                Déchiffrement en cours...
+                            </span>
                         </span>
                         <div>
                             <button onclick="downloadFile('/download/<%= fichier.id %>')">Télécharger</button>
@@ -90,10 +99,14 @@
             <% if (typeof fichiersPartages !=='undefined' && fichiersPartages.length> 0) { %>
                 <% fichiersPartages.forEach(function(partage) { %>
                     <div class="file-item shared-with-me">
-                        <span>
-                            <img src="/images/file_shared.svg" alt=""
-                                style="width: 25px; vertical-align: middle; margin-right: 8px;">
-                            <%= partage.nom_fichier %> <small>(de <%= partage.proprietaire %>)</small>
+                       <span>
+                            <img src="/images/file_shared.svg" alt="" style="width: 25px; vertical-align: middle; margin-right: 8px;">
+                            <span class="encrypted-filename" 
+                                data-enc-name="<%= partage.nom_fichier %>" 
+                                data-enc-key="<%= partage.cle_aes_partagee %>">
+                                Déchiffrement en cours...
+                            </span> 
+                            <small>(de <%= partage.proprietaire %>)</small>
                         </span>
                         <div>
                             <button
@@ -135,6 +148,8 @@
 
         </div>
     </div>
+
+    
     <script>
         window.MA_CLE_PUBLIQUE = "<%= publicKey %>";
     </script>

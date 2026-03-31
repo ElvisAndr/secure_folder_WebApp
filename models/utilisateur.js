@@ -23,6 +23,11 @@ const Utilisateur = {
         const query = `SELECT * FROM utilisateurs WHERE email = $1;`;
         const { rows } = await db.query(query, [email]);
         return rows[0];
+    },
+
+    supprimer: async (id) => {
+        const query = `DELETE FROM utilisateurs WHERE id = $1;`;
+        await db.query(query, [id]);
     }
 };
 

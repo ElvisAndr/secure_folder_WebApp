@@ -90,4 +90,7 @@ router.get('/download-shared/:id', async (req, res) => {
     await fileController.downloadShared(req, res);
 });
 
+
+router.delete('/api/files/:id', fileController.deleteFile);
+
 module.exports = router;

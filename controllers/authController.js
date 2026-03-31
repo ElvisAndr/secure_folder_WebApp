@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const Utilisateur = require('../models/utilisateur');
+const Fichier = require('../models/fichier');
 
 const authController = {
     // Register a new user
@@ -69,6 +70,30 @@ const authController = {
             if (err) console.error("Erreur lors de la déconnexion :", err);
             res.redirect('/login');
         });
+    },
+
+    deleteAccount: async (req, res) => {
+        try {
+            const userId = req.session.userId;
+
+            const fichiers = await Fichier.recupererParProprietaire(userId);
+            
+            for (const fichier of fichiers) {
+                const cheminStockage = path.join(__dirname, '../uploads', fichier.chemin_stockage);
+                await fs.unlink(cheminStockage).catch(err => console.log("Fichier physique introuvable, suite logique."));
+            }
+
+            await Utilisateur.supprimer(userId);
+
+            req.session.destroy((err) => {
+                if (err) throw err;
+                res.status(200).send("Compte et données supprimés définitivement.");
+            });
+
+        } catch (error) {
+            console.error("Erreur d'auto-destruction :", error);
+            res.status(500).send("Erreur serveur lors de la suppression du compte.");
+        }
     }
 };
 

@@ -93,7 +93,8 @@ document.getElementById('file-input').addEventListener('change', function () {
     const dropzone = document.getElementById('file-dropzone');
 
     if (this.files && this.files.length > 0) {
-        fileNameDisplay.innerText = "📄 " + this.files.name;
+        const selectedFile = this.files[0];
+        fileNameDisplay.innerText = "📄 " + selectedFile.name;
         dropzone.classList.add('has-file');
     } else {
         fileNameDisplay.innerText = "Cliquez pour sélectionner un fichier";
@@ -109,7 +110,7 @@ document.getElementById('upload-form').addEventListener('submit', async (e) => {
     const uploadBtn = document.getElementById('upload-btn');
 
     if (fileInput.files.length === 0) return;
-    const file = fileInput.files;
+    const file = fileInput.files[0];
 
     try {
         uploadBtn.disabled = true;
